@@ -3,7 +3,18 @@
     {
       "name": "teste",
       "outputDir": "/home/hazin",
-      "models": []
+      "models": [
+        {
+          "name": "User",
+          "abbreviation": "USR",
+          "codes": []
+        },
+        {
+          "name": "User",
+          "abbreviation": "USR",
+          "codes": []
+        }
+      ]
     }
   ]
 }

@@ -79,11 +79,45 @@ export default {
           })
         })
         .catch(err => err)
+    },
+    createModel: async (parent, { projectName, name, abbreviation }) => {
+      if (!name || !abbreviation) return new Error('Invalid arguments')
+      const project = db.get('projects').find({ name: projectName })
+      if (!project.value()) return new Error('Project not found')
+      if (
+        project
+          .get('models')
+          .find({ name })
+          .value()
+      )
+        return new Error('Name already in use')
+      if (
+        project
+          .get('models')
+          .find({ abbreviation })
+          .value()
+      )
+        return new Error('Abbreviation already in use')
+      project
+        .get('models')
+        .push({
+          name,
+          abbreviation,
+          codes: []
+        })
+        .write()
+      pubsub.publish('modelAdded', {
+        modelAdded: project.value()
+      })
+      return 'Model created'
     }
   },
   Subscription: {
     newProject: {
       subscribe: () => pubsub.asyncIterator('newProject')
+    },
+    modelAdded: {
+      subscribe: () => pubsub.asyncIterator('modelAdded')
     }
   }
 }

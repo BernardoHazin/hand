@@ -14,10 +14,16 @@ type Query {
 type Mutation {
   createProject(name: String!, outputDir: String!): String!
   deleteProject(name: String!): String!
+  createModel(
+    projectName: String!
+    name: String!
+    abbreviation: String!
+  ): String!
 }
 
 type Subscription {
   newProject: [Project]
+  modelAdded: Project
 }
 
 type Project {

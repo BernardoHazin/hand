@@ -51,14 +51,37 @@
       <v-layout>
         <v-flex xs6 class="pa-1">
           <h2>Create model</h2>
+          <v-form class="mt-2 pa-2" @submit.prevent="createModel">
+            <v-text-field v-model="modelName" color="secondary" label="Name" box></v-text-field>
+            <v-text-field
+              v-model="modelAbbreviation"
+              v-mask="'AAA'"
+              color="secondary"
+              counter="3"
+              label="Abbreviation"
+              box
+            ></v-text-field>
+            <v-btn
+              round
+              color="success"
+              :loading="loading"
+              :disabled="loading || !modelName || !modelAbbreviation"
+              type="submit"
+            >create</v-btn>
+          </v-form>
         </v-flex>
         <v-flex xs6>
-          <v-list class="primary">
+          <h2>Created models</h2>
+          <v-list class="primary mt-2 pa-2">
             <v-list-tile
               class="secondary white--text elevation-2"
               v-for="(model, index) in selected.models"
               :key="index"
-            >{{model}}</v-list-tile>
+            >
+              {{model.name}}
+              <v-spacer></v-spacer>
+              {{model.abbreviation}}
+            </v-list-tile>
           </v-list>
         </v-flex>
       </v-layout>
@@ -116,6 +139,7 @@
 
 <script>
 import gql from 'graphql-tag'
+import { mask } from 'vue-the-mask'
 
 export default {
   name: 'home',
@@ -129,8 +153,13 @@ export default {
       projectName: '',
       paths: [],
       existingPaths: [],
-      selected: ''
+      selected: '',
+      modelName: '',
+      modelAbbreviation: ''
     }
+  },
+  directives: {
+    mask
   },
   apollo: {
     projects: {
@@ -239,6 +268,49 @@ export default {
           this.$notify({
             group: 'main',
             type: 'danger',
+            title: 'Error',
+            text: err.message
+          })
+        })
+        .finally(() => {
+          this.loading = false
+        })
+    },
+    createModel() {
+      this.loading = true
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation(
+              $projectName: String!
+              $name: String!
+              $abbreviation: String!
+            ) {
+              createModel(
+                projectName: $projectName
+                name: $name
+                abbreviation: $abbreviation
+              )
+            }
+          `,
+          variables: {
+            projectName: this.selected.name,
+            name: this.modelName,
+            abbreviation: this.modelAbbreviation
+          }
+        })
+        .then(res => {
+          this.$notify({
+            group: 'main',
+            type: 'success',
+            title: 'Success',
+            text: 'Model created'
+          })
+        })
+        .catch(err => {
+          this.$notify({
+            group: 'main',
+            type: 'error',
             title: 'Error',
             text: err.message
           })
