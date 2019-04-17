@@ -1,0 +1,39 @@
+# Included scalars
+scalar JSON
+scalar Upload
+
+type Query {
+  projects: [Project]
+  path: String!
+  savedPaths: [String!]
+  homePath: [String!]
+  getProject(name: String!): Project
+  relativePath(path: String!): [String!]
+}
+
+type Mutation {
+  createProject(name: String!, outputDir: String!): String!
+  deleteProject(name: String!): String!
+}
+
+type Subscription {
+  newProject: [Project]
+}
+
+type Project {
+  name: String!
+  outputDir: String!
+  models: [Model]
+}
+
+type Model {
+  name: String!
+  abbreviation: String!
+  codes: [Code]
+}
+
+type Code {
+  name: String!
+  description: String!
+  codeType: String!
+}
