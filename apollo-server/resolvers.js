@@ -23,7 +23,7 @@ export default {
     },
     relativePath: async (parent, args) => {
       return fs
-        .readdirSync(path.resolve('/home', args.path), { withFileTypes: true })
+        .readdirSync(path.resolve(args.path), { withFileTypes: true })
         .filter(el => el.isDirectory())
         .filter(el => el.name[0] !== '.')
         .map(el => el.name)

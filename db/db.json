@@ -2,7 +2,7 @@
   "projects": [
     {
       "name": "teste",
-      "outputDir": "/home/hazin",
+      "outputDir": "/home/lul",
       "models": [
         {
           "name": "User",
@@ -10,8 +10,18 @@
           "codes": []
         },
         {
-          "name": "User",
-          "abbreviation": "USR",
+          "name": "Wallet",
+          "abbreviation": "WLT",
+          "codes": []
+        },
+        {
+          "name": "Admin",
+          "abbreviation": "ADM",
+          "codes": []
+        },
+        {
+          "name": "Company",
+          "abbreviation": "CPN",
           "codes": []
         }
       ]

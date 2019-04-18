@@ -40,6 +40,21 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <v-dialog max-width="30vw" v-model="dialog3">
+      <v-card>
+        <v-card-title>Are you sure you want to delete {{modelName}} model?</v-card-title>
+        <v-card-actions>
+          <v-spacer/>
+          <v-btn @click="resetDialog3">Cancel</v-btn>
+          <v-btn
+            @click="deleteProject"
+            :disabled="loading || !projectName"
+            :loading="loading"
+            color="error"
+          >Delete</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <v-layout class="mt-2" column v-if="selected">
       <v-layout row align-center>
         <v-btn icon @click="selected = ''">
@@ -51,7 +66,7 @@
       <v-layout>
         <v-flex xs6 class="pa-1">
           <h2>Create model</h2>
-          <v-form class="mt-2 pa-2" @submit.prevent="createModel">
+          <v-form ref="addModel" class="mt-2 pa-2" @submit.prevent="createModel">
             <v-text-field v-model="modelName" color="secondary" label="Name" box></v-text-field>
             <v-text-field
               v-model="modelAbbreviation"
@@ -75,12 +90,13 @@
           <v-list class="primary mt-2 pa-2">
             <v-list-tile
               class="secondary white--text elevation-2"
-              v-for="(model, index) in selected.models"
+              v-for="({ abbreviation, name }, index) in selected.models"
               :key="index"
             >
-              {{model.name}}
+              [{{abbreviation}}]
+              {{name}}
               <v-spacer></v-spacer>
-              {{model.abbreviation}}
+              <v-btn round small @click="openCreateModelDialog(name)" color="error">delete</v-btn>
             </v-list-tile>
           </v-list>
         </v-flex>
@@ -147,8 +163,9 @@ export default {
     return {
       dialog: false,
       dialog2: false,
+      dialog3: false,
       loading: false,
-      relative: ['/home'],
+      relative: ['/'],
       outputDir: '',
       projectName: '',
       paths: [],
@@ -201,6 +218,24 @@ export default {
       result({ data }) {
         console.log(data)
         this.paths = data.relativePath
+      }
+    },
+    $subscribe: {
+      modelAdded: {
+        query: gql`
+          subscription modelAdded {
+            modelAdded {
+              name
+              models {
+                name
+                abbreviation
+              }
+            }
+          }
+        `,
+        result({ data }) {
+          this.selected = data.modelAdded
+        }
       }
     }
   },
@@ -300,6 +335,7 @@ export default {
           }
         })
         .then(res => {
+          this.$refs.addModel.reset()
           this.$notify({
             group: 'main',
             type: 'success',
@@ -317,6 +353,7 @@ export default {
         })
         .finally(() => {
           this.loading = false
+          this.$refs.addModel.reset()
         })
     },
     getProject(name) {
@@ -333,6 +370,7 @@ export default {
               }
             }
           `,
+          fetchPolicy: 'no-cache',
           variables: {
             name: name
           }
@@ -350,9 +388,17 @@ export default {
           })
         })
     },
+    openCreateDialog(dir) {
+      this.outputDir = this.relative.join('/') + `/${dir}`
+      this.dialog = true
+    },
     openDeleteDialog(name) {
       this.projectName = name
       this.dialog2 = true
+    },
+    openCreateModelDialog(name) {
+      this.modelName = name
+      this.dialog3 = true
     },
     resetDialog() {
       this.outputDir = ''
@@ -363,9 +409,8 @@ export default {
       this.dialog2 = false
       this.projectName = ''
     },
-    openCreateDialog(dir) {
-      this.outputDir = this.relative.join('/') + `/${dir}`
-      this.dialog = true
+    resetDialog3() {
+      this.dialog3 = false
     },
     navigate(dir) {
       if (dir === '../') this.relative.pop()
