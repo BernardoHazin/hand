@@ -2,6 +2,25 @@
 scalar JSON
 scalar Upload
 
+type Project {
+  name: String!
+  outputDir: String!
+  models: [Model]
+}
+
+type Model {
+  name: String!
+  abbreviation: String!
+  codes: [Code]
+}
+
+type Code {
+  name: String!
+  description: String!
+  codeType: String!
+  index: Int!
+}
+
 type Query {
   projects: [Project]
   path: String!
@@ -20,27 +39,10 @@ type Mutation {
     abbreviation: String!
   ): String!
   deleteModel(projectName: String!, name: String): String!
+  setCodes(projectName: String!, modelName: String!, codes: [String]): String!
 }
 
 type Subscription {
   newProject: [Project]
   modelAdded: Project
-}
-
-type Project {
-  name: String!
-  outputDir: String!
-  models: [Model]
-}
-
-type Model {
-  name: String!
-  abbreviation: String!
-  codes: [Code]
-}
-
-type Code {
-  name: String!
-  description: String!
-  codeType: String!
 }

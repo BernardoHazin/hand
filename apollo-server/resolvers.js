@@ -23,7 +23,9 @@ export default {
     },
     relativePath: async (parent, args) => {
       return fs
-        .readdirSync(path.resolve(args.path), { withFileTypes: true })
+        .readdirSync(path.resolve(args.path), {
+          withFileTypes: true
+        })
         .filter(el => el.isDirectory())
         .filter(el => el.name[0] !== '.')
         .map(el => el.name)
@@ -39,26 +41,25 @@ export default {
         const projects = db.get('projects')
         if (projects.value().some(el => el.name === name))
           return new Error('Project name already in use')
-        return new Promise((resolve, reject) => {
+        projects
+          .push({
+            name,
+            outputDir: path.normalize(outputDir),
+            models: []
+          })
+          .write()
+        pubsub.publish('newProject', {
+          newProject: projects.value()
+        })
+        return 'Project created!'
+        /* return new Promise((resolve, reject) => {
           fs.writeFile(`${outputDir}/${name}.json`, '{}', err => {
             if (err) reject(err)
             resolve('File saved')
           })
         })
-          .then(() => {
-            projects
-              .push({
-                name,
-                outputDir,
-                models: []
-              })
-              .write()
-            pubsub.publish('newProject', {
-              newProject: projects.value()
-            })
-            return 'Project created!'
-          })
-          .catch(err => err)
+          .then(() => {})
+          .catch(err => err) */
       }
     },
     deleteProject: async (parent, { name }) => {
@@ -66,19 +67,14 @@ export default {
       const projects = db.get('projects')
       const project = projects.value().find(el => el.name === name)
       if (!project) return new Error('Project not found')
-      return new Promise((resolve, reject) => {
-        fs.unlink(`${project.outputDir}/${project.name}.json`, err => {
-          if (err) reject(err)
-          resolve('Project removed!')
-        })
+      projects.remove({ name }).write()
+      pubsub.publish('newProject', {
+        newProject: projects.value()
       })
-        .then(() => {
-          projects.remove({ name }).write()
-          pubsub.publish('newProject', {
-            newProject: projects.value()
-          })
-        })
-        .catch(err => err)
+      fs.unlink(`${project.outputDir}/${project.name}.json`, err => {
+        if (err) return err
+      })
+      return 'Project removed!'
     },
     createModel: async (parent, { projectName, name, abbreviation }) => {
       if (!name || !abbreviation) return new Error('Invalid arguments')
@@ -130,6 +126,17 @@ export default {
         modelAdded: project.value()
       })
       return 'Model removed'
+    },
+    setCodes: async (parent, { projectName, modelName, codes }) => {
+      console.log(JSON.parse(codes[0]))
+      /* if (!projectName || !modelName || !codes)
+        return new Error('Invalid arguments')
+      const project = db.get('projects').find({ name: projectName })
+      if (!project.value()) return new Error('Project not found')
+      const model = project.get('models').find({ name: modelName })
+      if (!model.value()) return new Error('Model does not exist')
+      model.set('codes', codes).write() */
+      return 'Codes seted'
     }
   },
   Subscription: {

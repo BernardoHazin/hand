@@ -57,20 +57,104 @@
     </v-dialog>
     <v-layout class="mt-2" column v-if="selected">
       <v-layout row align-center>
-        <v-btn icon @click="selected = ''">
+        <v-btn icon @click="selected = '', selectedModel = ''">
           <v-icon>fas fa-arrow-left</v-icon>
         </v-btn>
         <h2>{{selected.name.toUpperCase()}}</h2>
-        <v-btn small round>generate</v-btn>
+        <v-icon v-if="selectedModel" class="ml-2">fas fa-arrow-circle-right</v-icon>
+        <h2 v-if="selectedModel" class="ml-2">{{selectedModel.toUpperCase()}}</h2>
+        <v-spacer/>
+        <v-btn round v-if="selectedModel" @click="selectedModel = ''">Models</v-btn>
+        <v-btn color="info" round>generate</v-btn>
       </v-layout>
-      <v-layout>
+      <v-layout v-if="selectedModel">
+        <v-flex xs6 class="pa-1">
+          <h2>Create code</h2>
+          <v-form ref="addCode" class="mt-2 pa-2" @submit.prevent="addCode">
+            <v-text-field
+              v-model="codeName"
+              mask="AAAA"
+              counter="4"
+              color="secondary"
+              label="Name"
+              box
+            ></v-text-field>
+            <v-text-field color="secondary" v-model="codeDescription" label="Description" box></v-text-field>
+            <v-select
+              box
+              :items="['Validation', 'Run time']"
+              color="secondary"
+              label="Type"
+              v-model="codeType"
+            ></v-select>
+            <v-btn
+              round
+              color="success"
+              :loading="loading"
+              :disabled="loading || !codeName || !codeDescription || !codeType"
+              type="submit"
+            >create</v-btn>
+          </v-form>
+        </v-flex>
+        <v-flex xs6 class="pa-1">
+          <v-layout column>
+            <h2>Created codes</h2>
+            <v-list two-line class="primary mt-2 white--text">
+              <draggable v-model="codes" :ghostClass="'ghost--class'">
+                <v-layout
+                  style="cursor: pointer;"
+                  class="secondary pa-2"
+                  column
+                  v-for="(code, index) in codes"
+                  :key="index"
+                >
+                  <v-layout row>
+                    [{{code.codeType}}] {{code.name}}
+                    <v-spacer/>
+                    {{100 + index}}
+                  </v-layout>
+                  <div style="white-space: normal;">{{code.description}}</div>
+                </v-layout>
+              </draggable>
+            </v-list>
+            <!-- <table class="secondary mt-3 pa-2 white--text">
+              <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Index</th>
+              </tr>
+              <draggable v-model="codes">
+                <tr v-for="(code, index) in codes" :key="index">
+                  <td>[{{code.codeType === 'Validation' ? 'VAL' : 'RTN'}}] {{code.name}}</td>
+                  <td>{{code.description}}</td>
+                  <td>{{code.index}}</td>
+                </tr>
+              </draggable>
+            </table>-->
+          </v-layout>
+          <!-- <v-list class="primary mt-2 pa-2">
+            <v-list-tile
+              class="secondary white--text elevation-2"
+              v-for="(code, index) in codes"
+              :key="index"
+            >
+              <v-layout column>
+                <v-list-tile-title>[{{code.codeType === 'Validation' ? 'VAL' : 'RTN'}}] {{code.name}}</v-list-tile-title>
+                <v-list-tile-sub-title class="white--text">{{code.index}}</v-list-tile-sub-title>
+                {{code.description}}
+              </v-layout>
+            </v-list-tile>
+          </v-list>-->
+        </v-flex>
+      </v-layout>
+      <v-layout v-else>
         <v-flex xs6 class="pa-1">
           <h2>Create model</h2>
           <v-form ref="addModel" class="mt-2 pa-2" @submit.prevent="createModel">
             <v-text-field v-model="modelName" color="secondary" label="Name" box></v-text-field>
             <v-text-field
               v-model="modelAbbreviation"
-              v-mask="'AAA'"
+              mask="AAA"
               color="secondary"
               counter="3"
               label="Abbreviation"
@@ -90,7 +174,9 @@
           <v-list class="primary mt-2 pa-2">
             <v-list-tile
               class="secondary white--text elevation-2"
-              v-for="({ abbreviation, name }, index) in selected.models"
+              style="cursor: pointer;"
+              @click.self="setModel(name, codes)"
+              v-for="({ name, abbreviation, codes }, index) in selected.models"
               :key="index"
             >
               [{{abbreviation}}]
@@ -155,7 +241,7 @@
 
 <script>
 import gql from 'graphql-tag'
-import { mask } from 'vue-the-mask'
+import draggable from 'vuedraggable'
 
 export default {
   name: 'home',
@@ -165,18 +251,23 @@ export default {
       dialog2: false,
       dialog3: false,
       loading: false,
-      relative: ['/'],
+      relative: ['/home'],
       outputDir: '',
       projectName: '',
       paths: [],
       existingPaths: [],
       selected: '',
       modelName: '',
-      modelAbbreviation: ''
+      modelAbbreviation: '',
+      selectedModel: '',
+      codes: [],
+      codeName: '',
+      codeDescription: '',
+      codeType: ''
     }
   },
-  directives: {
-    mask
+  components: {
+    draggable
   },
   apollo: {
     projects: {
@@ -187,6 +278,7 @@ export default {
           }
         }
       `,
+      fetchPolicy: 'no-cache',
       result({ data }) {
         this.existingPaths = data.projects
       },
@@ -237,6 +329,11 @@ export default {
           this.selected = data.modelAdded
         }
       }
+    }
+  },
+  watch: {
+    codes(val) {
+      console.log(val.map(el => JSON.stringify(el)))
     }
   },
   methods: {
@@ -392,6 +489,16 @@ export default {
           this.loading = false
         })
     },
+    addCode() {
+      const max = Math.max(this.codes.map(el => el.index))
+      this.codes.push({
+        name: this.codeName,
+        description: this.codeDescription,
+        codeType: this.codeType,
+        index: max ? max + 1 : 100
+      })
+      this.$refs.addCode.reset()
+    },
     getProject(name) {
       this.$apollo
         .query({
@@ -402,6 +509,12 @@ export default {
                 models {
                   name
                   abbreviation
+                  codes {
+                    description
+                    name
+                    codeType
+                    index
+                  }
                 }
               }
             }
@@ -423,6 +536,10 @@ export default {
             text: err.message
           })
         })
+    },
+    setModel(name, codes) {
+      this.selectedModel = name
+      this.codes = codes
     },
     openCreateDialog(dir) {
       this.outputDir = this.relative.join('/') + `/${dir}`
@@ -460,4 +577,21 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+table,
+th,
+td {
+  border-collapse: collapse;
+  padding: 15px;
+}
+
+td {
+  max-width: 150px;
+  overflow: hidden;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+
+tr {
+  text-align: left;
+}
 </style>

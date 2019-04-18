@@ -23,6 +23,11 @@ export default {
   font-family: 'Jua', sans-serif;
 }
 
+.ghost--class {
+  background: black;
+  opacity: 1;
+}
+
 .notifications {
   font-size: 20px;
 }

@@ -1,3 +1,15 @@
 {
-  "projects": []
+  "projects": [
+    {
+      "name": "hey",
+      "outputDir": "/home/hazin",
+      "models": [
+        {
+          "name": "User",
+          "abbreviation": "USR",
+          "codes": []
+        }
+      ]
+    }
+  ]
 }
