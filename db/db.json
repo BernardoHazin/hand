@@ -3,23 +3,7 @@
     {
       "name": "teste",
       "outputDir": "/home/lul",
-      "models": [
-        {
-          "name": "User",
-          "abbreviation": "USR",
-          "codes": []
-        },
-        {
-          "name": "Wallet",
-          "abbreviation": "WLT",
-          "codes": []
-        },
-        {
-          "name": "Admin",
-          "abbreviation": "ADM",
-          "codes": []
-        }
-      ]
+      "models": []
     }
   ]
 }
