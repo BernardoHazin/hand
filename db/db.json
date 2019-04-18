@@ -1,15 +1,3 @@
 {
-  "projects": [
-    {
-      "name": "teste",
-      "outputDir": "/home/lul",
-      "models": [
-        {
-          "name": "User",
-          "abbreviation": "USR",
-          "codes": []
-        }
-      ]
-    }
-  ]
+  "projects": []
 }
