@@ -47,8 +47,8 @@
           <v-spacer/>
           <v-btn @click="resetDialog3">Cancel</v-btn>
           <v-btn
-            @click="deleteProject"
-            :disabled="loading || !projectName"
+            @click="deleteModel"
+            :disabled="loading || !modelName"
             :loading="loading"
             color="error"
           >Delete</v-btn>
@@ -354,6 +354,42 @@ export default {
         .finally(() => {
           this.loading = false
           this.$refs.addModel.reset()
+        })
+    },
+    deleteModel() {
+      this.loading = true
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation($projectName: String!, $name: String!) {
+              deleteModel(projectName: $projectName, name: $name)
+            }
+          `,
+          variables: {
+            projectName: this.selected.name,
+            name: this.modelName
+          }
+        })
+        .then(res => {
+          console.log('response', res)
+          this.$notify({
+            group: 'main',
+            type: 'success',
+            title: 'Success',
+            text: 'Model deleted'
+          })
+          this.resetDialog3()
+        })
+        .catch(err => {
+          this.$notify({
+            group: 'main',
+            type: 'danger',
+            title: 'Error',
+            text: err.message
+          })
+        })
+        .finally(() => {
+          this.loading = false
         })
     },
     getProject(name) {

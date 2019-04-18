@@ -18,11 +18,6 @@
           "name": "Admin",
           "abbreviation": "ADM",
           "codes": []
-        },
-        {
-          "name": "Company",
-          "abbreviation": "CPN",
-          "codes": []
         }
       ]
     }

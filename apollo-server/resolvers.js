@@ -110,6 +110,26 @@ export default {
         modelAdded: project.value()
       })
       return 'Model created'
+    },
+    deleteModel: async (parent, { projectName, name }) => {
+      if (!name || !projectName) return new Error('Invalid arguments')
+      const project = db.get('projects').find({ name: projectName })
+      if (!project.value()) return new Error('Project not found')
+      if (
+        !project
+          .get('models')
+          .find({ name })
+          .value()
+      )
+        return new Error('Model does not exist')
+      project
+        .get('models')
+        .remove({ name })
+        .write()
+      pubsub.publish('modelAdded', {
+        modelAdded: project.value()
+      })
+      return 'Model removed'
     }
   },
   Subscription: {

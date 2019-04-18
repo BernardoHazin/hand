@@ -19,6 +19,7 @@ type Mutation {
     name: String!
     abbreviation: String!
   ): String!
+  deleteModel(projectName: String!, name: String): String!
 }
 
 type Subscription {
