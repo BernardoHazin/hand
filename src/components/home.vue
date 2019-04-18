@@ -447,6 +447,7 @@ export default {
     },
     resetDialog3() {
       this.dialog3 = false
+      this.modelName = ''
     },
     navigate(dir) {
       if (dir === '../') this.relative.pop()

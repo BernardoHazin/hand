@@ -3,7 +3,13 @@
     {
       "name": "teste",
       "outputDir": "/home/lul",
-      "models": []
+      "models": [
+        {
+          "name": "User",
+          "abbreviation": "USR",
+          "codes": []
+        }
+      ]
     }
   ]
 }
