@@ -40,6 +40,7 @@ type Mutation {
   ): String!
   deleteModel(projectName: String!, name: String): String!
   setCodes(projectName: String!, modelName: String!, codes: [String]): String!
+  generate(projectName: String!): String!
 }
 
 type Subscription {

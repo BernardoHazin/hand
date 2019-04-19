@@ -9,15 +9,14 @@
           "abbreviation": "USR",
           "codes": [
             {
-              "description": "Invalid password",
-              "name": "USR",
+              "name": "SIN",
+              "description": "logout",
               "codeType": "Validation",
-              "index": 100,
-              "__typename": "Code"
+              "index": 100
             },
             {
-              "name": "TST",
-              "description": "ssssss",
+              "name": "SIN",
+              "description": "user signi",
               "codeType": "Validation",
               "index": 101
             }

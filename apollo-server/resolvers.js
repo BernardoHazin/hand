@@ -4,6 +4,37 @@ import path from 'path'
 import fs from 'fs'
 import pubsub from './pubsub'
 
+function fileContent(project) {
+  let content = `module.exports = {\n`
+  project
+    .get('models')
+    .value()
+    .forEach(el => {
+      content += `\t${el.name}: {\n`
+      content += `\t\tvalidation: {\n`
+      el.codes
+        .filter(cd => cd.codeType === 'Validation')
+        .forEach(cd => {
+          content += `\t\t\t${cd.index}: '${el.abbreviation}${cd.name}-${
+            cd.index
+          }', /** @description ${cd.description} **/\n`
+        })
+      content += `\t\t},\n`
+      content += `\t\truntime: {\n`
+      el.codes
+        .filter(cd => cd.codeType === 'Run time')
+        .forEach(cd => {
+          content += `\t\t\t${cd.index}: '${el.abbreviation}${cd.name}-${
+            cd.index
+          }', /** @description ${cd.description} **/\n`
+        })
+      content += `\t\t}\n`
+      content += `\t},\n`
+    })
+  content += `}`
+  return content
+}
+
 export default {
   JSON: GraphQLJSON,
   Query: {
@@ -52,14 +83,6 @@ export default {
           newProject: projects.value()
         })
         return 'Project created!'
-        /* return new Promise((resolve, reject) => {
-          fs.writeFile(`${outputDir}/${name}.json`, '{}', err => {
-            if (err) reject(err)
-            resolve('File saved')
-          })
-        })
-          .then(() => {})
-          .catch(err => err) */
       }
     },
     deleteProject: async (parent, { name }) => {
@@ -136,6 +159,22 @@ export default {
       if (!model.value()) return new Error('Model does not exist')
       model.set('codes', codes.map(el => JSON.parse(el))).write()
       return 'Codes seted'
+    },
+    generate: async (parent, { projectName }) => {
+      if (!projectName) return new Error('Invalid arguments')
+      const project = db.get('projects').find({ name: projectName })
+      if (!project.value()) return new Error('Project not found')
+      const { outputDir, name } = project.value()
+      return new Promise((resolve, reject) => {
+        fs.writeFile(`${outputDir}/${name}.js`, fileContent(project), err => {
+          if (err) reject(err)
+          resolve('File saved')
+        })
+      })
+        .then(() => {
+          return 'Project generated!'
+        })
+        .catch(err => err)
     }
   },
   Subscription: {

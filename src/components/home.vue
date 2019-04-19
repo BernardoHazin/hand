@@ -65,7 +65,7 @@
         <h2 v-if="selectedModel" class="ml-2">{{selectedModel.toUpperCase()}}</h2>
         <v-spacer/>
         <v-btn round v-if="selectedModel" @click="selectedModel = ''">Models</v-btn>
-        <v-btn color="info" round>generate</v-btn>
+        <v-btn color="info" :disabled="loading" round @click="generate">generate</v-btn>
       </v-layout>
       <v-layout v-if="selectedModel">
         <v-flex xs6 class="pa-1">
@@ -100,18 +100,24 @@
           <v-layout column>
             <h2>Created codes</h2>
             <v-list two-line class="primary mt-2 white--text">
-              <draggable v-model="codes" :ghostClass="'ghost--class'">
+              <draggable v-model="codes">
                 <v-layout
                   style="cursor: pointer;"
-                  class="secondary pa-2"
+                  class="pa-2"
                   column
                   v-for="(code, index) in codes"
+                  :class="code.codeType === 'Validation' ? 'accent' : 'secondary'"
                   :key="index"
                 >
                   <v-layout row>
                     [{{code.codeType}}] {{code.name}}
                     <v-spacer/>
-                    <button class="mr-2 delete-button" fab @click="removeCode(code)">
+                    <button
+                      :disabled="loading"
+                      class="mr-2 delete-button"
+                      fab
+                      @click="removeCode(code)"
+                    >
                       <v-icon class="pa-1 red--text" dark>fas fa-xs fa-trash</v-icon>
                     </button>
                     {{100 + index}}
@@ -297,6 +303,12 @@ export default {
               models {
                 name
                 abbreviation
+                codes {
+                  description
+                  name
+                  codeType
+                  index
+                }
               }
             }
           }
@@ -309,10 +321,10 @@ export default {
   },
   watch: {
     codes(val) {
-      val.forEach((el, i) => {
-        el.index = 100 + i
-      })
-      if (val.length) {
+      if (val) {
+        val.forEach((el, i) => {
+          el.index = 100 + i
+        })
         this.$apollo
           .mutate({
             mutation: gql`
@@ -349,6 +361,39 @@ export default {
     }
   },
   methods: {
+    generate() {
+      this.loading = true
+      this.$apollo
+        .mutate({
+          mutation: gql`
+            mutation generate($projectName: String!) {
+              generate(projectName: $projectName)
+            }
+          `,
+          variables: {
+            projectName: this.selected.name
+          }
+        })
+        .then(res => {
+          this.$notify({
+            group: 'main',
+            type: 'success',
+            title: 'Success',
+            text: 'Project generated!!'
+          })
+        })
+        .catch(err => {
+          this.$notify({
+            group: 'main',
+            type: 'danger',
+            title: 'Error',
+            text: err.message
+          })
+        })
+        .finally(() => {
+          this.loading = false
+        })
+    },
     createProject() {
       this.loading = true
       this.$apollo
@@ -462,7 +507,6 @@ export default {
         })
         .finally(() => {
           this.loading = false
-          this.$refs.addModel.reset()
         })
     },
     deleteModel() {
