@@ -128,14 +128,13 @@ export default {
       return 'Model removed'
     },
     setCodes: async (parent, { projectName, modelName, codes }) => {
-      console.log(JSON.parse(codes[0]))
-      /* if (!projectName || !modelName || !codes)
+      if (!projectName || !modelName || !codes)
         return new Error('Invalid arguments')
       const project = db.get('projects').find({ name: projectName })
       if (!project.value()) return new Error('Project not found')
       const model = project.get('models').find({ name: modelName })
       if (!model.value()) return new Error('Model does not exist')
-      model.set('codes', codes).write() */
+      model.set('codes', codes.map(el => JSON.parse(el))).write()
       return 'Codes seted'
     }
   },

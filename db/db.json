@@ -7,7 +7,21 @@
         {
           "name": "User",
           "abbreviation": "USR",
-          "codes": []
+          "codes": [
+            {
+              "description": "Invalid password",
+              "name": "USR",
+              "codeType": "Validation",
+              "index": 100,
+              "__typename": "Code"
+            },
+            {
+              "name": "TST",
+              "description": "ssssss",
+              "codeType": "Validation",
+              "index": 101
+            }
+          ]
         }
       ]
     }

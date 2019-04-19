@@ -111,40 +111,16 @@
                   <v-layout row>
                     [{{code.codeType}}] {{code.name}}
                     <v-spacer/>
+                    <button class="mr-2 delete-button" fab @click="removeCode(code)">
+                      <v-icon class="pa-1 red--text" dark>fas fa-xs fa-trash</v-icon>
+                    </button>
                     {{100 + index}}
                   </v-layout>
                   <div style="white-space: normal;">{{code.description}}</div>
                 </v-layout>
               </draggable>
             </v-list>
-            <!-- <table class="secondary mt-3 pa-2 white--text">
-              <tr>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Index</th>
-              </tr>
-              <draggable v-model="codes">
-                <tr v-for="(code, index) in codes" :key="index">
-                  <td>[{{code.codeType === 'Validation' ? 'VAL' : 'RTN'}}] {{code.name}}</td>
-                  <td>{{code.description}}</td>
-                  <td>{{code.index}}</td>
-                </tr>
-              </draggable>
-            </table>-->
           </v-layout>
-          <!-- <v-list class="primary mt-2 pa-2">
-            <v-list-tile
-              class="secondary white--text elevation-2"
-              v-for="(code, index) in codes"
-              :key="index"
-            >
-              <v-layout column>
-                <v-list-tile-title>[{{code.codeType === 'Validation' ? 'VAL' : 'RTN'}}] {{code.name}}</v-list-tile-title>
-                <v-list-tile-sub-title class="white--text">{{code.index}}</v-list-tile-sub-title>
-                {{code.description}}
-              </v-layout>
-            </v-list-tile>
-          </v-list>-->
         </v-flex>
       </v-layout>
       <v-layout v-else>
@@ -333,7 +309,43 @@ export default {
   },
   watch: {
     codes(val) {
-      console.log(val.map(el => JSON.stringify(el)))
+      val.forEach((el, i) => {
+        el.index = 100 + i
+      })
+      if (val.length) {
+        this.$apollo
+          .mutate({
+            mutation: gql`
+              mutation setCodes(
+                $projectName: String!
+                $modelName: String!
+                $codes: [String]
+              ) {
+                setCodes(
+                  projectName: $projectName
+                  modelName: $modelName
+                  codes: $codes
+                )
+              }
+            `,
+            variables: {
+              projectName: this.selected.name,
+              modelName: this.selectedModel,
+              codes: val.map(el => JSON.stringify(el))
+            }
+          })
+          .then(res => {
+            console.log(res)
+          })
+          .catch(err => {
+            this.$notify({
+              group: 'main',
+              type: 'danger',
+              title: 'Error',
+              text: err.message
+            })
+          })
+      }
     }
   },
   methods: {
@@ -499,6 +511,9 @@ export default {
       })
       this.$refs.addCode.reset()
     },
+    removeCode({ index }) {
+      this.codes.splice(index - 100, 1)
+    },
     getProject(name) {
       this.$apollo
         .query({
@@ -577,21 +592,15 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-table,
-th,
-td {
-  border-collapse: collapse;
-  padding: 15px;
+.delete-button {
+  transition: 0.3s;
 }
 
-td {
-  max-width: 150px;
-  overflow: hidden;
-  cursor: pointer;
-  text-overflow: ellipsis;
+.delete-button:hover {
+  transform: scale(1.4);
 }
 
-tr {
-  text-align: left;
+.delete-button:focus {
+  outline: none;
 }
 </style>
