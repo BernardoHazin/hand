@@ -14,11 +14,18 @@ type Model {
   codes: [Code]
 }
 
+type Locale {
+  lang: String!
+  content: String!
+}
+
 type Code {
   name: String!
   description: String!
   codeType: String!
   index: Int!
+  status: Int!
+  message: [Locale]
 }
 
 type Query {

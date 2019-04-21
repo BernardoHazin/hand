@@ -9,16 +9,30 @@
           "abbreviation": "USR",
           "codes": [
             {
-              "name": "SIN",
-              "description": "logout",
-              "codeType": "Validation",
-              "index": 100
+              "name": "CSDC",
+              "description": "casdcasdvfdvdfvd",
+              "codeType": "Run time",
+              "index": 100,
+              "status": "232",
+              "message": [
+                {
+                  "lang": "bg-BG",
+                  "content": "c33"
+                }
+              ]
             },
             {
-              "name": "SIN",
-              "description": "user signi",
+              "name": "CSDC",
+              "description": "csdcsdcs",
               "codeType": "Validation",
-              "index": 101
+              "index": 101,
+              "status": "222",
+              "message": [
+                {
+                  "lang": "bg-BG",
+                  "content": "csdcsc"
+                }
+              ]
             }
           ]
         }

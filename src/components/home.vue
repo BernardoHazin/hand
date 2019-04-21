@@ -5,6 +5,7 @@
         <v-icon>fas fa-hands-helping</v-icon>HAND
       </v-toolbar-title>
     </v-toolbar>
+    <!-- DIALOGS -->
     <v-dialog max-width="30vw" v-model="dialog">
       <v-card>
         <v-card-title>Project name</v-card-title>
@@ -55,19 +56,27 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <!-- LAYOUTS -->
+    <!-- project selected -->
     <v-layout class="mt-2" column v-if="selected">
+      <!-- navbar -->
       <v-layout row align-center>
-        <v-btn icon @click="selected = '', selectedModel = ''">
+        <v-btn icon @click="selected = '', resetModel()">
           <v-icon>fas fa-arrow-left</v-icon>
         </v-btn>
         <h2>{{selected.name.toUpperCase()}}</h2>
         <v-icon v-if="selectedModel" class="ml-2">fas fa-arrow-circle-right</v-icon>
         <h2 v-if="selectedModel" class="ml-2">{{selectedModel.toUpperCase()}}</h2>
         <v-spacer/>
-        <v-btn round v-if="selectedModel" @click="selectedModel = ''">Models</v-btn>
-        <v-btn color="info" :disabled="loading" round @click="generate">generate</v-btn>
+        <v-btn round v-if="selectedModel" @click="resetModel">Models</v-btn>
+        <v-btn color="info" :disabled="autoGenerate || loading" round @click="generate">generate</v-btn>
+        <div>
+          <v-switch v-model="autoGenerate" label="Auto generate"></v-switch>
+        </div>
       </v-layout>
+      <!-- model selected -->
       <v-layout v-if="selectedModel">
+        <!-- left -->
         <v-flex xs6 class="pa-1">
           <h2>Create code</h2>
           <v-form ref="addCode" class="mt-2 pa-2" @submit.prevent="addCode">
@@ -80,6 +89,7 @@
               box
             ></v-text-field>
             <v-text-field color="secondary" v-model="codeDescription" label="Description" box></v-text-field>
+            <v-text-field color="secondary" mask="###" v-model="codeStatus" label="Status" box></v-text-field>
             <v-select
               box
               :items="['Validation', 'Run time']"
@@ -87,19 +97,60 @@
               label="Type"
               v-model="codeType"
             ></v-select>
+            <!-- create message -->
+            <v-layout row align-start>
+              <v-select
+                color="secondary"
+                label="Locale"
+                class="mr-1"
+                box
+                :items="locales"
+                v-model="locale"
+                item-value="0"
+                item-text="2"
+              ></v-select>
+              <v-text-field color="secondary" v-model="message" label="Message" box></v-text-field>
+              <v-btn fab small depressed :disabled="!locale || !message" @click="pushMessage">
+                <v-icon>fas fa-plus</v-icon>
+              </v-btn>
+            </v-layout>
+            <!-- messages list -->
+            <v-layout column>
+              <v-list class="primary">
+                <v-list-tile
+                  class="secondary white--text"
+                  v-for="({ content, lang }, i) in messagesList"
+                  :key="i"
+                >
+                  <v-list-tile-title>
+                    <p>[{{lang}}] {{content}}</p>
+                  </v-list-tile-title>
+                  <v-list-tile-action>
+                    <button class="ml-2 delete-button" fab @click="removeMessage(i)">
+                      <v-icon class="pa-1 red--text" dark>fas fa-xs fa-trash</v-icon>
+                    </button>
+                  </v-list-tile-action>
+                </v-list-tile>
+              </v-list>
+            </v-layout>
             <v-btn
               round
               color="success"
               :loading="loading"
-              :disabled="loading || !codeName || !codeDescription || !codeType"
+              :disabled="loading || !codeName || !codeDescription || !codeType || !codeStatus || !messagesList.length"
               type="submit"
             >create</v-btn>
           </v-form>
         </v-flex>
+        <!-- right -->
         <v-flex xs6 class="pa-1">
           <v-layout column>
             <h2>Created codes</h2>
-            <v-list two-line class="primary mt-2 white--text">
+            <v-list
+              two-line
+              class="primary mt-2 white--text"
+              style="max-height: 50vh; overflow: auto;"
+            >
               <draggable v-model="codes">
                 <v-layout
                   style="cursor: pointer;"
@@ -130,6 +181,7 @@
         </v-flex>
       </v-layout>
       <v-layout v-else>
+        <!-- left -->
         <v-flex xs6 class="pa-1">
           <h2>Create model</h2>
           <v-form ref="addModel" class="mt-2 pa-2" @submit.prevent="createModel">
@@ -151,6 +203,7 @@
             >create</v-btn>
           </v-form>
         </v-flex>
+        <!-- right -->
         <v-flex xs6>
           <h2>Created models</h2>
           <v-list class="primary mt-2 pa-2">
@@ -171,6 +224,7 @@
       </v-layout>
     </v-layout>
     <v-layout v-else class="mt-2" row align-start>
+      <!-- left -->
       <v-flex xs6 class="pa-1">
         <h2>Create project</h2>
         <h3 class="mt-2">Choose output dir</h3>
@@ -199,6 +253,7 @@
           </v-list-tile>
         </v-list>
       </v-flex>
+      <!-- right -->
       <v-flex xs6 class="pa-1">
         <h2>Existing projects</h2>
         <h3 class="mt-2">Choose a project</h3>
@@ -233,6 +288,7 @@ export default {
       dialog2: false,
       dialog3: false,
       loading: false,
+      autoGenerate: true,
       relative: ['/home'],
       outputDir: '',
       projectName: '',
@@ -243,9 +299,68 @@ export default {
       modelAbbreviation: '',
       selectedModel: '',
       codes: [],
+      messagesList: [],
+      locale: '',
+      message: '',
       codeName: '',
       codeDescription: '',
-      codeType: ''
+      codeType: '',
+      codeStatus: '',
+      locales: [
+        ['af-ZA', 'Afrikaans', 'Afrikaans'],
+        ['ar', 'العربية', 'Arabic'],
+        ['bg-BG', 'Български', 'Bulgarian'],
+        ['ca-AD', 'Català', 'Catalan'],
+        ['cs-CZ', 'Čeština', 'Czech'],
+        ['cy-GB', 'Cymraeg', 'Welsh'],
+        ['da-DK', 'Dansk', 'Danish'],
+        ['de-AT', 'Deutsch (Österreich)', 'German (Austria)'],
+        ['de-CH', 'Deutsch (Schweiz)', 'German (Switzerland)'],
+        ['de-DE', 'Deutsch (Deutschland)', 'German (Germany)'],
+        ['el-GR', 'Ελληνικά', 'Greek'],
+        ['en-GB', 'English (UK)', 'English (UK)'],
+        ['en-US', 'English (US)', 'English (US)'],
+        ['es-CL', 'Español (Chile)', 'Spanish (Chile)'],
+        ['es-ES', 'Español (España)', 'Spanish (Spain)'],
+        ['es-MX', 'Español (México)', 'Spanish (Mexico)'],
+        ['et-EE', 'Eesti', 'Estonian'],
+        ['eu', 'Euskara', 'Basque'],
+        ['fa-IR', 'فارسی', 'Persian'],
+        ['fi-FI', 'Suomi', 'Finnish'],
+        ['fr-CA', 'Français (Canada)', 'French (Canada)'],
+        ['fr-FR', 'Français (France)', 'French (France)'],
+        ['he-IL', 'עברית', 'Hebrew'],
+        ['hr-HR', 'Hrvatski', 'Croatian'],
+        ['hu-HU', 'Magyar', 'Hungarian'],
+        ['id-ID', 'Bahasa Indonesia', 'Indonesian'],
+        ['is-IS', 'Íslenska', 'Icelandic'],
+        ['it-IT', 'Italiano', 'Italian'],
+        ['ja-JP', '日本語', 'Japanese'],
+        ['km-KH', 'ភាសាខ្មែរ', 'Khmer'],
+        ['ko-KR', '한국어', 'Korean'],
+        ['la', 'Latina', 'Latin'],
+        ['lt-LT', 'Lietuvių', 'Lithuanian'],
+        ['lv-LV', 'Latviešu', 'Latvian'],
+        ['mn-MN', 'Монгол', 'Mongolian'],
+        ['nb-NO', 'Norsk bokmål', 'Norwegian (Bokmål)'],
+        ['nl-NL', 'Nederlands', 'Dutch'],
+        ['nn-NO', 'Norsk nynorsk', 'Norwegian (Nynorsk)'],
+        ['pl-PL', 'Polski', 'Polish'],
+        ['pt-BR', 'Português (Brasil)', 'Portuguese (Brazil)'],
+        ['pt-PT', 'Português (Portugal)', 'Portuguese (Portugal)'],
+        ['ro-RO', 'Română', 'Romanian'],
+        ['ru-RU', 'Русский', 'Russian'],
+        ['sk-SK', 'Slovenčina', 'Slovak'],
+        ['sl-SI', 'Slovenščina', 'Slovenian'],
+        ['sr-RS', 'Српски / Srpski', 'Serbian'],
+        ['sv-SE', 'Svenska', 'Swedish'],
+        ['th-TH', 'ไทย', 'Thai'],
+        ['tr-TR', 'Türkçe', 'Turkish'],
+        ['uk-UA', 'Українська', 'Ukrainian'],
+        ['vi-VN', 'Tiếng Việt', 'Vietnamese'],
+        ['zh-CN', '中文 (中国大陆)', 'Chinese (PRC)'],
+        ['zh-TW', '中文 (台灣)', 'Chinese (Taiwan)']
+      ]
     }
   },
   components: {
@@ -308,6 +423,10 @@ export default {
                   name
                   codeType
                   index
+                  message {
+                    lang
+                    content
+                  }
                 }
               }
             }
@@ -347,7 +466,7 @@ export default {
             }
           })
           .then(res => {
-            console.log(res)
+            this.generate()
           })
           .catch(err => {
             this.$notify({
@@ -361,6 +480,17 @@ export default {
     }
   },
   methods: {
+    pushMessage() {
+      this.messagesList.push({
+        lang: this.locale,
+        content: this.message
+      })
+      this.locale = ''
+      this.message = ''
+    },
+    removeMessage(index) {
+      this.messagesList.splice(index, 1)
+    },
     generate() {
       this.loading = true
       this.$apollo
@@ -375,12 +505,13 @@ export default {
           }
         })
         .then(res => {
-          this.$notify({
-            group: 'main',
-            type: 'success',
-            title: 'Success',
-            text: 'Project generated!!'
-          })
+          if (!this.autoGenerate)
+            this.$notify({
+              group: 'main',
+              type: 'success',
+              title: 'Success',
+              text: 'Project generated!!'
+            })
         })
         .catch(err => {
           this.$notify({
@@ -496,6 +627,7 @@ export default {
             title: 'Success',
             text: 'Model created'
           })
+          this.generate()
         })
         .catch(err => {
           this.$notify({
@@ -532,6 +664,7 @@ export default {
             text: 'Model deleted'
           })
           this.resetDialog3()
+          this.generate()
         })
         .catch(err => {
           this.$notify({
@@ -551,8 +684,11 @@ export default {
         name: this.codeName,
         description: this.codeDescription,
         codeType: this.codeType,
-        index: max ? max + 1 : 100
+        index: max ? max + 1 : 100,
+        status: this.codeStatus,
+        message: this.messagesList
       })
+      this.messagesList = []
       this.$refs.addCode.reset()
     },
     removeCode({ index }) {
@@ -573,6 +709,10 @@ export default {
                     name
                     codeType
                     index
+                    message {
+                      lang
+                      content
+                    }
                   }
                 }
               }
@@ -611,6 +751,16 @@ export default {
     openCreateModelDialog(name) {
       this.modelName = name
       this.dialog3 = true
+    },
+    resetModel() {
+      this.selectedModel = ''
+      this.messagesList = []
+      this.codeName = ''
+      this.codeDescription = ''
+      this.codeStatus = ''
+      this.codeType = ''
+      this.message = ''
+      this.locale = ''
     },
     resetDialog() {
       this.outputDir = ''

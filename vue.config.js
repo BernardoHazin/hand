@@ -4,5 +4,6 @@ module.exports = {
     apollo: {
       enableMocks: true
     }
-  }
+  },
+  outputDir: '../hand-prod/public/'
 }

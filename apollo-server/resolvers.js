@@ -15,18 +15,34 @@ function fileContent(project) {
       el.codes
         .filter(cd => cd.codeType === 'Validation')
         .forEach(cd => {
-          content += `\t\t\t${cd.index}: '${el.abbreviation}${cd.name}-${
+          content += `\t\t\t${cd.index}: {\n`
+          content += `\t\t\t\tcode: '${el.abbreviation}${cd.name}-${
             cd.index
           }', /** @description ${cd.description} **/\n`
+          content += `\t\t\t\tstatus: ${cd.status},\n`
+          content += '\t\t\t\tmessage: {\n'
+          cd.message.forEach(msg => {
+            content += `\t\t\t\t\t'${msg.lang}': '${msg.content}',\n`
+          })
+          content += '\t\t\t\t}\n'
+          content += `\t\t\t},\n`
         })
       content += `\t\t},\n`
       content += `\t\truntime: {\n`
       el.codes
         .filter(cd => cd.codeType === 'Run time')
         .forEach(cd => {
-          content += `\t\t\t${cd.index}: '${el.abbreviation}${cd.name}-${
+          content += `\t\t\t${cd.index}: {\n`
+          content += `\t\t\t\tcode: '${el.abbreviation}${cd.name}-${
             cd.index
           }', /** @description ${cd.description} **/\n`
+          content += `\t\t\t\tstatus: ${cd.status},\n`
+          content += '\t\t\t\tmessage: {\n'
+          cd.message.forEach(msg => {
+            content += `\t\t\t\t\t'${msg.lang}': '${msg.content}',\n`
+          })
+          content += '\t\t\t\t}\n'
+          content += `\t\t\t},\n`
         })
       content += `\t\t}\n`
       content += `\t},\n`
