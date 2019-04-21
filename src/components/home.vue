@@ -146,28 +146,59 @@
         <v-flex xs6 class="pa-1">
           <v-layout column>
             <h2>Created codes</h2>
+            <h3>Validation</h3>
             <v-list
               two-line
               class="primary mt-2 white--text"
               style="max-height: 50vh; overflow: auto;"
             >
-              <draggable v-model="codes">
+              <draggable v-model="validationCodes">
                 <v-layout
                   style="cursor: pointer;"
-                  class="pa-2"
+                  class="pa-2 accent"
                   column
-                  v-for="(code, index) in codes"
-                  :class="code.codeType === 'Validation' ? 'accent' : 'secondary'"
+                  v-for="(code, index) in validationCodes"
                   :key="index"
                 >
                   <v-layout row>
-                    [{{code.codeType}}] {{code.name}}
+                    {{code.name}}
                     <v-spacer/>
                     <button
                       :disabled="loading"
                       class="mr-2 delete-button"
                       fab
-                      @click="removeCode(code)"
+                      @click="removeValidationCode(code)"
+                    >
+                      <v-icon class="pa-1 red--text" dark>fas fa-xs fa-trash</v-icon>
+                    </button>
+                    {{100 + index}}
+                  </v-layout>
+                  <div style="white-space: normal;">{{code.description}}</div>
+                </v-layout>
+              </draggable>
+            </v-list>
+            <h3>Run time</h3>
+            <v-list
+              two-line
+              class="primary mt-2 white--text"
+              style="max-height: 50vh; overflow: auto;"
+            >
+              <draggable v-model="runtimeCodes">
+                <v-layout
+                  style="cursor: pointer;"
+                  class="pa-2 secondary"
+                  column
+                  v-for="(code, index) in runtimeCodes"
+                  :key="index"
+                >
+                  <v-layout row>
+                    {{code.name}}
+                    <v-spacer/>
+                    <button
+                      :disabled="loading"
+                      class="mr-2 delete-button"
+                      fab
+                      @click="removeRuntimeCode(code)"
                     >
                       <v-icon class="pa-1 red--text" dark>fas fa-xs fa-trash</v-icon>
                     </button>
@@ -210,8 +241,8 @@
             <v-list-tile
               class="secondary white--text elevation-2"
               style="cursor: pointer;"
-              @click.self="setModel(name, codes)"
-              v-for="({ name, abbreviation, codes }, index) in selected.models"
+              @click.self="setModel(name, validationCodes, runtimeCodes)"
+              v-for="({ name, abbreviation, validationCodes, runtimeCodes }, index) in selected.models"
               :key="index"
             >
               [{{abbreviation}}]
@@ -298,7 +329,8 @@ export default {
       modelName: '',
       modelAbbreviation: '',
       selectedModel: '',
-      codes: [],
+      validationCodes: [],
+      runtimeCodes: [],
       messagesList: [],
       locale: '',
       message: '',
@@ -418,10 +450,18 @@ export default {
               models {
                 name
                 abbreviation
-                codes {
+                validationCodes {
                   description
                   name
-                  codeType
+                  index
+                  message {
+                    lang
+                    content
+                  }
+                }
+                runtimeCodes {
+                  description
+                  name
                   index
                   message {
                     lang
@@ -439,7 +479,7 @@ export default {
     }
   },
   watch: {
-    codes(val) {
+    validationCodes(val) {
       if (val) {
         val.forEach((el, i) => {
           el.index = 100 + i
@@ -450,19 +490,58 @@ export default {
               mutation setCodes(
                 $projectName: String!
                 $modelName: String!
-                $codes: [String]
+                $validationCodes: [String]
               ) {
-                setCodes(
+                setValidationCodes(
                   projectName: $projectName
                   modelName: $modelName
-                  codes: $codes
+                  validationCodes: $validationCodes
                 )
               }
             `,
             variables: {
               projectName: this.selected.name,
               modelName: this.selectedModel,
-              codes: val.map(el => JSON.stringify(el))
+              validationCodes: val.map(el => JSON.stringify(el))
+            }
+          })
+          .then(res => {
+            this.generate()
+          })
+          .catch(err => {
+            this.$notify({
+              group: 'main',
+              type: 'danger',
+              title: 'Error',
+              text: err.message
+            })
+          })
+      }
+    },
+    runtimeCodes(val) {
+      if (val) {
+        val.forEach((el, i) => {
+          el.index = 100 + i
+        })
+        this.$apollo
+          .mutate({
+            mutation: gql`
+              mutation setCodes(
+                $projectName: String!
+                $modelName: String!
+                $runtimeCodes: [String]
+              ) {
+                setRuntimeCodes(
+                  projectName: $projectName
+                  modelName: $modelName
+                  runtimeCodes: $runtimeCodes
+                )
+              }
+            `,
+            variables: {
+              projectName: this.selected.name,
+              modelName: this.selectedModel,
+              runtimeCodes: val.map(el => JSON.stringify(el))
             }
           })
           .then(res => {
@@ -679,20 +758,35 @@ export default {
         })
     },
     addCode() {
-      const max = Math.max(this.codes.map(el => el.index))
-      this.codes.push({
-        name: this.codeName,
-        description: this.codeDescription,
-        codeType: this.codeType,
-        index: max ? max + 1 : 100,
-        status: this.codeStatus,
-        message: this.messagesList
-      })
+      let max
+      if (this.codeType === 'Validation') {
+        max = Math.max(this.validationCodes.map(el => el.index))
+        this.validationCodes.push({
+          name: this.codeName,
+          description: this.codeDescription,
+          index: max ? max + 1 : 100,
+          status: this.codeStatus,
+          message: this.messagesList
+        })
+      } else if (this.codeType === 'Run time') {
+        max = Math.max(this.runtimeCodes.map(el => el.index))
+        this.runtimeCodes.push({
+          name: this.codeName,
+          description: this.codeDescription,
+          index: max ? max + 1 : 100,
+          status: this.codeStatus,
+          message: this.messagesList
+        })
+      }
+      console.log(this.validationCodes)
       this.messagesList = []
       this.$refs.addCode.reset()
     },
-    removeCode({ index }) {
-      this.codes.splice(index - 100, 1)
+    removeValidationCode({ index }) {
+      this.validationCodes.splice(index - 100, 1)
+    },
+    removeRuntimeCode({ index }) {
+      this.runtimeCodes.splice(index - 100, 1)
     },
     getProject(name) {
       this.$apollo
@@ -704,11 +798,21 @@ export default {
                 models {
                   name
                   abbreviation
-                  codes {
+                  validationCodes {
                     description
                     name
-                    codeType
                     index
+                    status
+                    message {
+                      lang
+                      content
+                    }
+                  }
+                  runtimeCodes {
+                    description
+                    name
+                    index
+                    status
                     message {
                       lang
                       content
@@ -736,9 +840,10 @@ export default {
           })
         })
     },
-    setModel(name, codes) {
+    setModel(name, validationCodes, runtimeCodes) {
       this.selectedModel = name
-      this.codes = codes
+      this.validationCodes = validationCodes
+      this.runtimeCodes = runtimeCodes
     },
     openCreateDialog(dir) {
       this.outputDir = this.relative.join('/') + `/${dir}`

@@ -11,7 +11,8 @@ type Project {
 type Model {
   name: String!
   abbreviation: String!
-  codes: [Code]
+  validationCodes: [Code]
+  runtimeCodes: [Code]
 }
 
 type Locale {
@@ -22,7 +23,6 @@ type Locale {
 type Code {
   name: String!
   description: String!
-  codeType: String!
   index: Int!
   status: Int!
   message: [Locale]
@@ -46,7 +46,16 @@ type Mutation {
     abbreviation: String!
   ): String!
   deleteModel(projectName: String!, name: String): String!
-  setCodes(projectName: String!, modelName: String!, codes: [String]): String!
+  setValidationCodes(
+    projectName: String!
+    modelName: String!
+    validationCodes: [String]
+  ): String!
+  setRuntimeCodes(
+    projectName: String!
+    modelName: String!
+    runtimeCodes: [String]
+  ): String!
   generate(projectName: String!): String!
 }
 

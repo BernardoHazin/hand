@@ -12,11 +12,10 @@ function fileContent(project) {
     .forEach(el => {
       content += `\t${el.name}: {\n`
       content += `\t\tvalidation: {\n`
-      el.codes
-        .filter(cd => cd.codeType === 'Validation')
+      el.validationCodes
         .forEach(cd => {
           content += `\t\t\t${cd.index}: {\n`
-          content += `\t\t\t\tcode: '${el.abbreviation}${cd.name}-${
+          content += `\t\t\t\tcode: '${el.abbreviation}${cd.name}-V${
             cd.index
           }', /** @description ${cd.description} **/\n`
           content += `\t\t\t\tstatus: ${cd.status},\n`
@@ -29,11 +28,10 @@ function fileContent(project) {
         })
       content += `\t\t},\n`
       content += `\t\truntime: {\n`
-      el.codes
-        .filter(cd => cd.codeType === 'Run time')
+      el.runtimeCodes
         .forEach(cd => {
           content += `\t\t\t${cd.index}: {\n`
-          content += `\t\t\t\tcode: '${el.abbreviation}${cd.name}-${
+          content += `\t\t\t\tcode: '${el.abbreviation}${cd.name}-R${
             cd.index
           }', /** @description ${cd.description} **/\n`
           content += `\t\t\t\tstatus: ${cd.status},\n`
@@ -110,7 +108,7 @@ export default {
       pubsub.publish('newProject', {
         newProject: projects.value()
       })
-      fs.unlink(`${project.outputDir}/${project.name}.json`, err => {
+      fs.unlink(`${project.outputDir}/${project.name}.js`, err => {
         if (err) return err
       })
       return 'Project removed!'
@@ -138,7 +136,8 @@ export default {
         .push({
           name,
           abbreviation,
-          codes: []
+          validationCodes: [],
+          runtimeCodes: []
         })
         .write()
       pubsub.publish('modelAdded', {
@@ -166,14 +165,32 @@ export default {
       })
       return 'Model removed'
     },
-    setCodes: async (parent, { projectName, modelName, codes }) => {
-      if (!projectName || !modelName || !codes)
+    setValidationCodes: async (
+      parent,
+      { projectName, modelName, validationCodes }
+    ) => {
+      if (!projectName || !modelName || !validationCodes)
         return new Error('Invalid arguments')
       const project = db.get('projects').find({ name: projectName })
       if (!project.value()) return new Error('Project not found')
       const model = project.get('models').find({ name: modelName })
       if (!model.value()) return new Error('Model does not exist')
-      model.set('codes', codes.map(el => JSON.parse(el))).write()
+      model
+        .set('validationCodes', validationCodes.map(el => JSON.parse(el)))
+        .write()
+      return 'Codes seted'
+    },
+    setRuntimeCodes: async (
+      parent,
+      { projectName, modelName, runtimeCodes }
+    ) => {
+      if (!projectName || !modelName || !runtimeCodes)
+        return new Error('Invalid arguments')
+      const project = db.get('projects').find({ name: projectName })
+      if (!project.value()) return new Error('Project not found')
+      const model = project.get('models').find({ name: modelName })
+      if (!model.value()) return new Error('Model does not exist')
+      model.set('runtimeCodes', runtimeCodes.map(el => JSON.parse(el))).write()
       return 'Codes seted'
     },
     generate: async (parent, { projectName }) => {
