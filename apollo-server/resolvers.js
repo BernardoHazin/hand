@@ -5,7 +5,7 @@ import fs from 'fs'
 import pubsub from './pubsub'
 
 function fileContent(project) {
-  let content = `module.exports = {\n`
+  let content = `const codes = {\n`
   project
     .get('models')
     .value()
@@ -45,6 +45,18 @@ function fileContent(project) {
       content += `\t\t}\n`
       content += `\t},\n`
     })
+  content += `}\n\n`
+  content += `module.exports = codes\n\n`
+  content += `exports.getCode = code => {\n`
+  content += `\tconst values = Object.values(codes)\n`
+  content += `\t\t.map(el => [\n`
+  content += `\t\t  ...Object.values(el['validation']),\n`
+  content += `\t\t  ...Object.values(el['runtime'])\n`
+  content += `\t\t])\n`
+  content += `\t\t.reduce((acc, cur) => [...acc, ...cur], [])\n`
+  content += `\tconst fetchedCode = values.find(el => el.code === code)\n`
+  content += `\tif (!fetchedCode) throw new Error(\`Code "\${code}" does not exist\`)\n`
+  content += `\telse return fetchedCode\n`
   content += `}`
   return content
 }
